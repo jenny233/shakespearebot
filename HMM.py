@@ -11,9 +11,9 @@ import preprocessing as pp
 
 #creates a dictionary of all the words in the syllable dictionary, gives them
 #an index
-words = pp.list_of_words()
+words = pp.word_id()
 #also creates an inverse dictionary for reverse lookup
-ivd = pp.word_id()
+ivd = pp.list_of_words
 
 class HiddenMarkovModel:
     '''
@@ -611,9 +611,9 @@ with open('shakespeare.txt') as shakespeare:
 results = results[1:]
 
 
-poems = pp.load_poems('shakespeare.txt')
-hm = unsupervised_HMM(poems, 10,20)
-a = hm.generate_emission(10)
-sentence = ''
-for i in a[0]:
-    print(ivd[i])
+# poems = pp.load_poems('shakespeare.txt')
+# hm = unsupervised_HMM(poems, 10,20)
+# a = hm.generate_emission(10)
+# sentence = ''
+# for i in a[0]:
+#     print(ivd[i])

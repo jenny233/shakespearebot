@@ -8,10 +8,14 @@ word_list = pp.list_of_words()
 word_id = pp.word_id()
 
 poem_lines = pp.load_poems("shakespeare.txt")
+
+# Train HMM
 hmm = HMM.unsupervised_HMM(poem_lines, 4, 10)
 
-# def generate_line(model, length)
-#     emissions, states = model.generate_emission(length)
-#     for id in emissions
-#     for i in a[0]:
-#         print(ivd[i])
+def generate_line(model, length):
+    emissions, states = model.generate_emission(length)
+    for i in emissions:
+        print(word_list[i], end=" ")
+    print()
+
+generate_line(hmm, 10)
