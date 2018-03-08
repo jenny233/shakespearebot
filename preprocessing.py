@@ -58,5 +58,5 @@ def load_poems(filename, onepoem=False):
             X.append(x)
     return X
 
-def list_of_words(X):
+def list_of_words():
     return word_list
