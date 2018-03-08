@@ -18,7 +18,6 @@ with open("data/Syllable_dictionary.txt") as f:
         line = line.strip()
         lst = line.split()
         word_list.append(lst[0])
-print("word_list:", len(word_list))
 
 def load_poems(filename, onepoem=False):
     '''
@@ -60,3 +59,13 @@ def load_poems(filename, onepoem=False):
 
 def list_of_words():
     return word_list
+
+def word_id():
+    '''
+    returns a dictionary that maps word to id
+    '''
+    dictionary = {}
+    for i in range(len(word_list)):
+        word = word_list[i]
+        dictionary[word] = i
+    return dictionary
