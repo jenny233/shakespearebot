@@ -8,6 +8,7 @@ X = pp.load_poems("data/shakespeare.txt")
 '''
 
 SYMBOL_LIST = {'?', '.',  ')', ',', '!', ';', '(', ':'}
+
 def load_poems(filename, onepoem=False):
     '''
     filename should be directory/filename.
@@ -41,3 +42,10 @@ def load_poems(filename, onepoem=False):
             # Add to the matrix of lines
             X.append(x)
     return X
+
+def set_of_words(X):
+    word_set = set()
+    for x in X:
+        for word in x:
+            word_set.add(word)
+    return word_set
