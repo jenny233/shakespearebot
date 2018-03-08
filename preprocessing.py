@@ -10,14 +10,18 @@ X = pp.load_poems("data/shakespeare.txt")
 SYMBOL_LIST = {'?', '.',  ')', ',', '!', ';', '(', ':'}
 
 word_list = []
+word_sylls = {}
 with open("data/Syllable_dictionary.txt") as f:
     while True:
         line = f.readline()
         if line == "":
             break
         line = line.strip()
-        lst = line.split()
+        lst = line.split(" ", maxsplit=1)
+        if len(lst) != 2:
+            print(lst)
         word_list.append(lst[0])
+        word_sylls[lst[0]] = lst[1].split(" ")
 
 def load_poems(filename, onepoem=False):
     '''
@@ -58,6 +62,9 @@ def load_poems(filename, onepoem=False):
     return X
 
 def list_of_words():
+    '''
+    returns a list that maps id to word
+    '''
     return word_list
 
 def word_id():
@@ -69,3 +76,10 @@ def word_id():
         word = word_list[i]
         dictionary[word] = i
     return dictionary
+
+def word_syllables():
+    '''
+    returns a dictionary that maps word to a list of potential number of
+            syllables. Each element in the list is a string.
+    '''
+    return word_sylls
