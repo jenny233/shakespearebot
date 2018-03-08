@@ -223,7 +223,7 @@ class HiddenMarkovModel:
                         if t == -M:
                             prob += betas[t][nxt] \
                                     * self.A_start[nxt] \
-                                    * self.O[nxt][x[t]]
+                                    * self.O[nxt][words[x[t]]]
     
                         else:
                             prob += betas[t][nxt] \
@@ -592,6 +592,8 @@ def unsupervised_HMM(X, n_states, N_iters):
 
     return HMM
 
+
+#this was a function that just gets the words of the first poem to troubleshoot
 results = []
 with open('shakespeare.txt') as shakespeare:
     i = 0
@@ -599,9 +601,12 @@ with open('shakespeare.txt') as shakespeare:
         results.append(line.strip().split(' '))
         i += 1
         if i == 15: break
-        
 results = results[1:]
 
+
+#creates a dictionary of all the words in the syllable dictionary, gives them
+#an index
+#also creates an inverse dictionary for reverse lookup
 words = {}
 with open('Syllable_dictionary.txt') as syll:
     i = 0
@@ -610,7 +615,16 @@ with open('Syllable_dictionary.txt') as syll:
         words[a[0]] = i
         i+=1
 
-p = unsupervised_HMM(results,4,10)
 ivd = {v: k for k, v in words.items()}
 
+
 import preprocessing as pp
+
+poems = pp.load_poems('shakespeare.txt')
+hm = unsupervised_HMM(poems, 10,20)
+a = hm.generate_emission(10)
+sentence = ''
+for i in a[0]:
+    print(ivd[i])
+    
+    
