@@ -13,7 +13,9 @@ import preprocessing as pp
 #an index
 words = pp.word_id()
 #also creates an inverse dictionary for reverse lookup
-ivd = pp.list_of_words
+word_list = pp.list_of_words()
+#word to number of syllables dictionary
+word_sylls = pp.word_syllables()
 
 class HiddenMarkovModel:
     '''
@@ -326,8 +328,7 @@ class HiddenMarkovModel:
         # the code under the comment is part of the M-step.
 
         for iteration in range(1, N_iters + 1):
-            if iteration % 10 == 0:
-                print("Iteration: " + str(iteration))
+            print("\rIteration: " + str(iteration) + ", " + str(100 * iteration / N_iters) + "%", end="")
 
             # Numerator and denominator for the update terms of A and O.
             A_num = [[0. for i in range(self.L)] for j in range(self.L)]
@@ -401,13 +402,13 @@ class HiddenMarkovModel:
                     if O_den[curr] != 0:
                         self.O[curr][xt] = O_num[curr][xt] / O_den[curr]
 
-    def generate_emission(self, M):
+    def generate_emission(self, n_syllables):
         '''
         Generates an emission of length M, assuming that the starting state
         is chosen uniformly at random.
 
         Arguments:
-            M:          Length of the emission to generate.
+            n_syllables: num of syllables of the emission to generate.
 
         Returns:
             emission:   The randomly generated emission as a list.
@@ -419,7 +420,9 @@ class HiddenMarkovModel:
         state = random.choice(range(self.L))
         states = []
 
-        for t in range(M):
+        first_words_sylls = {0} # total number of sylls without last_word
+        last_word_sylls = {0} # potential number of syllables of last_word
+        while max(first_words_sylls) + max(last_word_sylls) < n_syllables:
             # Append state.
             states.append(state)
 
@@ -431,8 +434,25 @@ class HiddenMarkovModel:
                 rand_var -= self.O[state][next_obs]
                 next_obs += 1
 
-            next_obs -= 1
+            next_obs -= 1 # the id of the next word
             emission.append(next_obs)
+            next_word = word_list[next_obs]
+
+            # update the total first_words_sylls
+            new_counts = set()
+            for n in last_word_sylls:
+                for m in first_words_sylls:
+                    new_counts.add(m + n)
+            first_words_sylls = new_counts
+
+            # update last_word_sylls
+            last_word_sylls = set()
+            for item in word_sylls[next_word]:
+                if item[0] == "E":
+                    n = int(item[1])
+                else:
+                    n = int(item)
+                last_word_sylls.add(n)
 
             # Sample next state.
             rand_var = random.uniform(0, 1)
@@ -444,6 +464,50 @@ class HiddenMarkovModel:
 
             next_state -= 1
             state = next_state
+
+        # If the number of syllables does not match exactly, change last word
+        total_sylls = set()
+        for m in first_words_sylls:
+            for n in last_word_sylls:
+                total_sylls.add(m + n)
+        while not n_syllables in total_sylls:
+            # revert to previous state
+            emission = emission[: -1]
+            state = states[len(states) - 2]
+
+            # Sample next state.
+            rand_var = random.uniform(0, 1)
+            next_state = 0
+            while rand_var > 0:
+                rand_var -= self.A[state][next_state]
+                next_state += 1
+            next_state -= 1
+            state = next_state
+
+            # Append state.
+            states.append(state)
+
+            # Sample next observation.
+            rand_var = random.uniform(0, 1)
+            next_obs = 0
+
+            while rand_var > 0:
+                rand_var -= self.O[state][next_obs]
+                next_obs += 1
+
+            next_obs -= 1 # the id of the next word
+            emission.append(next_obs)
+            next_word = word_list[next_obs]
+
+            # update total_sylls
+            total_sylls = set()
+            for item in word_sylls[next_word]:
+                if item[0] == "E":
+                    n = int(item[1])
+                else:
+                    n = int(item)
+                for m in first_words_sylls:
+                    total_sylls.add(m + n)
 
         return emission, states
 
@@ -598,22 +662,3 @@ def unsupervised_HMM(X, n_states, N_iters):
     HMM.unsupervised_learning(X, N_iters)
 
     return HMM
-
-
-#this was a function that just gets the words of the first poem to troubleshoot
-results = []
-with open('shakespeare.txt') as shakespeare:
-    i = 0
-    for line in shakespeare:
-        results.append(line.strip().split(' '))
-        i += 1
-        if i == 15: break
-results = results[1:]
-
-
-# poems = pp.load_poems('shakespeare.txt')
-# hm = unsupervised_HMM(poems, 10,20)
-# a = hm.generate_emission(10)
-# sentence = ''
-# for i in a[0]:
-#     print(ivd[i])
