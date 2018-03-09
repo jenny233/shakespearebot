@@ -7,6 +7,7 @@
 ########################################
 
 import random
+import numpy as np
 import preprocessing as pp
 
 #creates a dictionary of all the words in the syllable dictionary, gives them
@@ -328,7 +329,7 @@ class HiddenMarkovModel:
         # the code under the comment is part of the M-step.
 
         for iteration in range(1, N_iters + 1):
-            print("\rIteration: " + str(iteration) + ", " + str(100 * iteration / N_iters) + "%", end="")
+            print("\rIteration: " + str(iteration) + ", " + str(100 * iteration // N_iters) + "%", end="")
 
             # Numerator and denominator for the update terms of A and O.
             A_num = [[0. for i in range(self.L)] for j in range(self.L)]
@@ -402,23 +403,8 @@ class HiddenMarkovModel:
                     if O_den[curr] != 0:
                         self.O[curr][xt] = O_num[curr][xt] / O_den[curr]
 
-    def generate_emission(self, n_syllables):
-        '''
-        Generates an emission of length M, assuming that the starting state
-        is chosen uniformly at random.
-
-        Arguments:
-            n_syllables: num of syllables of the emission to generate.
-
-        Returns:
-            emission:   The randomly generated emission as a list.
-
-            states:     The randomly generated states as a list.
-        '''
-
-        emission = []
+    def generate_emission_forward(self, n_syllables):
         state = random.choice(range(self.L))
-        states = []
 
         first_words_sylls = {0} # total number of sylls without last_word
         last_word_sylls = {0} # potential number of syllables of last_word
@@ -509,6 +495,137 @@ class HiddenMarkovModel:
                 for m in first_words_sylls:
                     total_sylls.add(m + n)
 
+        return emission, states
+
+    def generate_emission(self, n_syllables, last_word=""):
+        '''
+        Generates an emission of length M, assuming that the starting state
+        is chosen uniformly at random.
+
+        Arguments:
+            n_syllables: num of syllables of the emission to generate.
+            last_word  : if specified, the last word of the line.
+
+        Returns:
+            emission:   The randomly generated emission as a list.
+
+            states:     The randomly generated states as a list.
+        '''
+
+        emission = []
+        states = []
+
+        # If last_word is not specified, generate from the start
+        if last_word == "":
+            return generate_emission_forward(n_syllables)
+
+        last_words_sylls = {0} # total number of sylls without first_word
+        first_word_sylls = set() # potential number of syllables of first_word
+
+        # Initialize first_word and first_word_sylls
+        first_word = last_word
+        for item in word_sylls[last_word]:
+            if item[0] == "E":
+                n = int(item[1])
+            else:
+                n = int(item)
+            first_word_sylls.add(n)
+
+        # Initialize the last obs and state
+        obs = words[last_word]
+        # For the last state, pick the one with max prob of generating last_word
+        O = np.array(self.O)
+        A = np.array(self.A)
+        state = np.argmax(O[:, obs])
+
+        # Loop to generate the line
+        while max(last_words_sylls) + max(first_word_sylls) < n_syllables:
+
+            # Append to states and emission
+            states.append(state)
+            emission.append(obs)
+
+            # Update syllable counts
+            new_sylls = set()
+            for m in last_words_sylls:
+                for n in first_word_sylls:
+                    new_sylls.add(m + n)
+            last_words_sylls = new_sylls
+
+            # Normalize the column
+            A_col = A[:, state]
+            A_col = A_col / sum(A_col)
+            # Find prev state
+            rand_var = random.uniform(0, 1)
+            prev_state = 0
+            while rand_var > 0:
+                rand_var -= A_col[prev_state]
+                prev_state += 1
+            prev_state -= 1
+            state = prev_state
+
+            # Sample prev observation
+            rand_var = random.uniform(0, 1)
+            prev_obs = 0
+            while rand_var > 0:
+                rand_var -= O[prev_state][prev_obs]
+                prev_obs += 1
+            prev_obs -= 1 # the id of the prev word
+            obs = prev_obs
+
+            # Update first_word_sylls
+            first_word_sylls = set()
+            first_word = word_list[obs]
+            for item in word_sylls[first_word]:
+                if item[0] != "E":
+                    n = int(item)
+                    first_word_sylls.add(n)
+
+
+        # Calculate the total number of syllables
+        total_sylls = set()
+        for m in last_words_sylls:
+            for n in first_word_sylls:
+                total_sylls.add(m + n)
+
+        # If the number of syllables does not match exactly, change first word
+        while not n_syllables in total_sylls:
+            # Revert state and obs
+            state = states[len(states) - 1]
+            obs = emission[len(emission) - 1]
+
+            # Normalize the column
+            A_col = A[:, state]
+            A_col = A_col / sum(A_col)
+            # Find prev state
+            rand_var = random.uniform(0, 1)
+            prev_state = 0
+            while rand_var > 0:
+                rand_var -= A_col[prev_state]
+                prev_state += 1
+            prev_state -= 1
+            state = prev_state
+
+            # Sample prev observation.
+            rand_var = random.uniform(0, 1)
+            prev_obs = 0
+            while rand_var > 0:
+                rand_var -= O[state][prev_obs]
+                prev_obs += 1
+            prev_obs -= 1 # the id of the prev word
+            prev_word = word_list[prev_obs] # the word
+
+            # update total_sylls
+            total_sylls = set()
+            for item in word_sylls[prev_word]:
+                if item[0] != "E":
+                    n = int(item)
+                    for m in last_words_sylls:
+                        total_sylls.add(m + n)
+        states.append(state)
+        emission.append(obs)
+        states.reverse()
+        emission.reverse()
         return emission, states
 
 
