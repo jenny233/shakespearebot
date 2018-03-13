@@ -14,8 +14,8 @@ poem_lines = pp.load_poems("shakespeare.txt")
 rhyme_pairs = pp.rhyme_pairs(poem_lines)
 
 # Train HMM
-hmm = HMM.unsupervised_HMM(poem_lines, 10, 100)
-# hmm = HMM.unsupervised_HMM(poem_lines, 3, 5)
+# hmm = HMM.unsupervised_HMM(poem_lines, 10, 100)
+hmm = HMM.unsupervised_HMM(poem_lines, 1, 1)
 print()
 
 

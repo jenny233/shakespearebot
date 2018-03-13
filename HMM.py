@@ -404,6 +404,9 @@ class HiddenMarkovModel:
                         self.O[curr][xt] = O_num[curr][xt] / O_den[curr]
 
     def generate_emission_forward(self, n_syllables):
+        emission = []
+        states = []
+        
         state = random.choice(range(self.L))
 
         first_words_sylls = {0} # total number of sylls without last_word
@@ -517,7 +520,7 @@ class HiddenMarkovModel:
 
         # If last_word is not specified, generate from the start
         if last_word == "":
-            return generate_emission_forward(n_syllables)
+            return self.generate_emission_forward(n_syllables)
 
         last_words_sylls = {0} # total number of sylls without first_word
         first_word_sylls = set() # potential number of syllables of first_word
